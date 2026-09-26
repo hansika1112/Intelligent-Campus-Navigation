@@ -1,36 +1,51 @@
-import { useState } from 'react'
-import { FiArrowRight, FiClock, FiMapPin, FiNavigation } from 'react-icons/fi'
+import { useEffect, useState } from 'react'
+import {
+  FiArrowRight,
+  FiClock,
+  FiMapPin,
+  FiNavigation
+} from 'react-icons/fi'
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  Polyline,
+  useMap
+} from 'react-leaflet'
+import 'leaflet/dist/leaflet.css'
 import { campusLocations } from '../data/campusLocations'
+import { getRoute } from '../services/routingService'
 
-function calculateDistance(lat1, lon1, lat2, lon2) {
-  const earthRadius = 6371
+function RouteMapView({ coordinates }) {
+  const map = useMap()
 
-  const dLat = ((lat2 - lat1) * Math.PI) / 180
-  const dLon = ((lon2 - lon1) * Math.PI) / 180
+  useEffect(() => {
+    if (coordinates?.length) {
+      map.fitBounds(coordinates, {
+        padding: [50, 50]
+      })
+    }
+  }, [coordinates, map])
 
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) ** 2
-
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-
-  return earthRadius * c
+  return null
 }
 
 function NavigationPage() {
   const [startId, setStartId] = useState('')
   const [destinationId, setDestinationId] = useState('')
   const [route, setRoute] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  const handleFindRoute = () => {
+  const handleFindRoute = async () => {
     if (!startId || !destinationId) {
       return
     }
 
     if (startId === destinationId) {
       setRoute(null)
+      setError('Starting point and destination must be different.')
       return
     }
 
@@ -46,25 +61,28 @@ function NavigationPage() {
       return
     }
 
-    const distance = calculateDistance(
-      start.latitude,
-      start.longitude,
-      destination.latitude,
-      destination.longitude
-    )
+    try {
+      setLoading(true)
+      setError('')
+      setRoute(null)
 
-    const walkingSpeed = 5
-    const walkingTime = Math.max(
-      1,
-      Math.round((distance / walkingSpeed) * 60)
-    )
+      const routeData = await getRoute(start, destination)
 
-    setRoute({
-      start,
-      destination,
-      distance: distance.toFixed(2),
-      walkingTime
-    })
+      setRoute({
+        start,
+        destination,
+        distance: (routeData.distance / 1000).toFixed(2),
+        walkingTime: Math.max(
+          1,
+          Math.round(routeData.duration / 60)
+        ),
+        coordinates: routeData.coordinates
+      })
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -103,13 +121,19 @@ function NavigationPage() {
                   onChange={(e) => {
                     setStartId(e.target.value)
                     setRoute(null)
+                    setError('')
                   }}
                   className="w-full appearance-none rounded-xl border border-slate-700 bg-slate-950 px-11 py-4 text-white outline-none focus:border-blue-500"
                 >
-                  <option value="">Select starting point</option>
+                  <option value="">
+                    Select starting point
+                  </option>
 
                   {campusLocations.map((location) => (
-                    <option key={location.id} value={location.id}>
+                    <option
+                      key={location.id}
+                      value={location.id}
+                    >
                       {location.name}
                     </option>
                   ))}
@@ -130,13 +154,19 @@ function NavigationPage() {
                   onChange={(e) => {
                     setDestinationId(e.target.value)
                     setRoute(null)
+                    setError('')
                   }}
                   className="w-full appearance-none rounded-xl border border-slate-700 bg-slate-950 px-11 py-4 text-white outline-none focus:border-blue-500"
                 >
-                  <option value="">Select destination</option>
+                  <option value="">
+                    Select destination
+                  </option>
 
                   {campusLocations.map((location) => (
-                    <option key={location.id} value={location.id}>
+                    <option
+                      key={location.id}
+                      value={location.id}
+                    >
                       {location.name}
                     </option>
                   ))}
@@ -148,121 +178,210 @@ function NavigationPage() {
 
           <button
             onClick={handleFindRoute}
-            disabled={!startId || !destinationId || startId === destinationId}
+            disabled={
+              !startId ||
+              !destinationId ||
+              startId === destinationId ||
+              loading
+            }
             className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-4 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <FiNavigation />
-            Find Route
+
+            {loading ? 'Finding Route...' : 'Find Route'}
           </button>
 
-          {startId && destinationId && startId === destinationId && (
+          {error && (
             <p className="mt-4 text-center text-sm text-red-400">
-              Starting point and destination must be different.
+              {error}
             </p>
           )}
+
+          {startId &&
+            destinationId &&
+            startId === destinationId && (
+              <p className="mt-4 text-center text-sm text-red-400">
+                Starting point and destination must be different.
+              </p>
+            )}
 
         </div>
 
         {route && (
-          <div className="mt-8 rounded-2xl border border-blue-500/30 bg-slate-900 p-6 md:p-8">
+          <>
+            <div className="mt-8 rounded-2xl border border-blue-500/30 bg-slate-900 p-6 md:p-8">
 
-            <div className="mb-6 flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600/20">
-                <FiNavigation className="text-xl text-blue-400" />
+              <div className="mb-6 flex items-center gap-3">
+
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600/20">
+                  <FiNavigation className="text-xl text-blue-400" />
+                </div>
+
+                <div>
+                  <h2 className="text-xl font-bold">
+                    Route Found
+                  </h2>
+
+                  <p className="text-sm text-slate-400">
+                    Walking route information
+                  </p>
+                </div>
+
               </div>
 
-              <div>
-                <h2 className="text-xl font-bold">
-                  Route Found
-                </h2>
+              <div className="grid gap-4 md:grid-cols-2">
 
-                <p className="text-sm text-slate-400">
-                  Walking route information
-                </p>
+                <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
+                  <p className="text-sm text-slate-400">
+                    Starting Point
+                  </p>
+
+                  <p className="mt-2 font-semibold">
+                    {route.start.name}
+                  </p>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    {route.start.category}
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
+                  <p className="text-sm text-slate-400">
+                    Destination
+                  </p>
+
+                  <p className="mt-2 font-semibold">
+                    {route.destination.name}
+                  </p>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    {route.destination.category}
+                  </p>
+                </div>
+
               </div>
-            </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
 
-              <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
-                <p className="text-sm text-slate-400">
-                  Starting Point
-                </p>
+                <div className="flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-950 p-5">
 
-                <p className="mt-2 font-semibold">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-blue-600/20">
+                    <FiMapPin className="text-blue-400" />
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-slate-400">
+                      Distance
+                    </p>
+
+                    <p className="text-xl font-bold">
+                      {route.distance} km
+                    </p>
+                  </div>
+
+                </div>
+
+                <div className="flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-950 p-5">
+
+                  <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-green-600/20">
+                    <FiClock className="text-green-400" />
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-slate-400">
+                      Estimated Walking Time
+                    </p>
+
+                    <p className="text-xl font-bold">
+                      {route.walkingTime} min
+                    </p>
+                  </div>
+
+                </div>
+
+              </div>
+
+              <div className="mt-6 flex items-center justify-center gap-3 rounded-xl bg-slate-950 p-5 text-center">
+
+                <span className="font-medium">
                   {route.start.name}
-                </p>
+                </span>
 
-                <p className="mt-1 text-sm text-slate-500">
-                  {route.start.category}
-                </p>
-              </div>
+                <FiArrowRight className="shrink-0 text-blue-400" />
 
-              <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
-                <p className="text-sm text-slate-400">
-                  Destination
-                </p>
-
-                <p className="mt-2 font-semibold">
+                <span className="font-medium">
                   {route.destination.name}
-                </p>
+                </span>
 
-                <p className="mt-1 text-sm text-slate-500">
-                  {route.destination.category}
-                </p>
               </div>
 
             </div>
 
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <div className="mt-8 overflow-hidden rounded-2xl border border-slate-800">
 
-              <div className="flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-950 p-5">
-                <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-blue-600/20">
-                  <FiMapPin className="text-blue-400" />
-                </div>
+              <MapContainer
+                center={route.coordinates[0]}
+                zoom={17}
+                scrollWheelZoom={true}
+                className="h-[500px] w-full"
+              >
 
-                <div>
-                  <p className="text-sm text-slate-400">
-                    Distance
-                  </p>
+                <RouteMapView
+                  coordinates={route.coordinates}
+                />
 
-                  <p className="text-xl font-bold">
-                    {route.distance} km
-                  </p>
-                </div>
-              </div>
+                <TileLayer
+                  attribution="&copy; OpenStreetMap contributors"
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
 
-              <div className="flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-950 p-5">
-                <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-green-600/20">
-                  <FiClock className="text-green-400" />
-                </div>
+                <Marker
+                  position={[
+                    route.start.latitude,
+                    route.start.longitude
+                  ]}
+                >
+                  <Popup>
+                    <strong>
+                      {route.start.name}
+                    </strong>
 
-                <div>
-                  <p className="text-sm text-slate-400">
-                    Estimated Walking Time
-                  </p>
+                    <br />
 
-                  <p className="text-xl font-bold">
-                    {route.walkingTime} min
-                  </p>
-                </div>
-              </div>
+                    Starting Point
+                  </Popup>
+                </Marker>
+
+                <Marker
+                  position={[
+                    route.destination.latitude,
+                    route.destination.longitude
+                  ]}
+                >
+                  <Popup>
+                    <strong>
+                      {route.destination.name}
+                    </strong>
+
+                    <br />
+
+                    Destination
+                  </Popup>
+                </Marker>
+
+                <Polyline
+                  positions={route.coordinates}
+                  pathOptions={{
+                    color: '#2563eb',
+                    weight: 6,
+                    opacity: 0.85
+                  }}
+                />
+
+              </MapContainer>
 
             </div>
-
-            <div className="mt-6 flex items-center justify-center gap-3 rounded-xl bg-slate-950 p-5 text-center">
-              <span className="font-medium">
-                {route.start.name}
-              </span>
-
-              <FiArrowRight className="shrink-0 text-blue-400" />
-
-              <span className="font-medium">
-                {route.destination.name}
-              </span>
-            </div>
-
-          </div>
+          </>
         )}
 
       </div>
