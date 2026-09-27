@@ -19,6 +19,7 @@ import {
 import 'leaflet/dist/leaflet.css'
 import { campusLocations } from '../data/campusLocations'
 import { getRoute } from '../services/routingService'
+import RouteInstructions from '../components/RouteInstructions'
 
 function RouteMapView({ coordinates }) {
   const map = useMap()
@@ -41,11 +42,12 @@ function NavigationPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const [accessibilityOptions, setAccessibilityOptions] = useState({
-    wheelchair: false,
-    avoidStairs: false,
-    avoidRestrictedPaths: false
-  })
+  const [accessibilityOptions, setAccessibilityOptions] =
+    useState({
+      wheelchair: false,
+      avoidStairs: false,
+      avoidRestrictedPaths: false
+    })
 
   const handleAccessibilityChange = (option) => {
     setAccessibilityOptions((previous) => ({
@@ -59,13 +61,17 @@ function NavigationPage() {
 
   const handleFindRoute = async () => {
     if (!startId || !destinationId) {
-      setError('Please select both starting point and destination.')
+      setError(
+        'Please select both starting point and destination.'
+      )
       return
     }
 
     if (startId === destinationId) {
       setRoute(null)
-      setError('Starting point and destination must be different.')
+      setError(
+        'Starting point and destination must be different.'
+      )
       return
     }
 
@@ -78,7 +84,9 @@ function NavigationPage() {
     )
 
     if (!start || !destination) {
-      setError('Invalid starting point or destination.')
+      setError(
+        'Invalid starting point or destination.'
+      )
       return
     }
 
@@ -98,18 +106,27 @@ function NavigationPage() {
       setError('')
       setRoute(null)
 
-      const routeData = await getRoute(start, destination)
+      const routeData = await getRoute(
+        start,
+        destination,
+        accessibilityOptions,
+        campusLocations
+      )
 
       setRoute({
         start,
         destination,
-        distance: (routeData.distance / 1000).toFixed(2),
+        distance: (
+          routeData.distance / 1000
+        ).toFixed(2),
         walkingTime: Math.max(
           1,
           Math.round(routeData.duration / 60)
         ),
         coordinates: routeData.coordinates,
-        accessibilityOptions
+        accessibilityOptions,
+        source: routeData.source,
+        pathNodes: routeData.pathNodes || []
       })
     } catch (err) {
       setError(err.message)
@@ -132,8 +149,9 @@ function NavigationPage() {
           </h1>
 
           <p className="mt-4 max-w-2xl text-slate-400">
-            Select your starting point and destination and choose
-            accessibility preferences for your journey.
+            Select your starting point and destination
+            and choose accessibility preferences for
+            your journey.
           </p>
         </div>
 
@@ -147,7 +165,7 @@ function NavigationPage() {
               </label>
 
               <div className="relative">
-                <FiMapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-400" />
+                <FiMapPin className="absolute left-4 top-1/2 z-10 -translate-y-1/2 text-blue-400" />
 
                 <select
                   value={startId}
@@ -180,7 +198,7 @@ function NavigationPage() {
               </label>
 
               <div className="relative">
-                <FiNavigation className="absolute left-4 top-1/2 -translate-y-1/2 text-green-400" />
+                <FiNavigation className="absolute left-4 top-1/2 z-10 -translate-y-1/2 text-green-400" />
 
                 <select
                   value={destinationId}
@@ -212,6 +230,7 @@ function NavigationPage() {
           <div className="mt-8 rounded-xl border border-slate-800 bg-slate-950 p-5">
 
             <div className="flex items-start gap-3">
+
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-600/20">
                 <FiShield className="text-blue-400" />
               </div>
@@ -222,9 +241,11 @@ function NavigationPage() {
                 </h2>
 
                 <p className="mt-1 text-sm text-slate-400">
-                  Select preferences that should be considered for your route.
+                  Select preferences that should be
+                  considered for your route.
                 </p>
               </div>
+
             </div>
 
             <div className="mt-5 grid gap-3 md:grid-cols-3">
@@ -370,7 +391,8 @@ function NavigationPage() {
             destinationId &&
             startId === destinationId && (
               <p className="mt-4 text-center text-sm text-red-400">
-                Starting point and destination must be different.
+                Starting point and destination must
+                be different.
               </p>
             )}
 
@@ -436,7 +458,16 @@ function NavigationPage() {
                 </div>
               )}
 
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="mt-3 rounded-lg border border-slate-800 bg-slate-950 px-4 py-3 text-xs text-slate-500">
+                Routing source:{' '}
+                <span className="font-medium text-slate-300">
+                  {route.source === 'campus'
+                    ? 'Campus Accessibility Graph'
+                    : 'OSRM'}
+                </span>
+              </div>
+
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
 
                 <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
                   <p className="text-sm text-slate-400">
@@ -521,6 +552,12 @@ function NavigationPage() {
                 </span>
 
               </div>
+
+              <RouteInstructions
+                start={route.start}
+                destination={route.destination}
+                pathNodes={route.pathNodes}
+              />
 
             </div>
 
