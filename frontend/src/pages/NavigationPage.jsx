@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
 import {
   FiArrowRight,
+  FiCheck,
   FiClock,
   FiMapPin,
-  FiNavigation
+  FiNavigation,
+  FiShield,
+  FiUser
 } from 'react-icons/fi'
 import {
   MapContainer,
@@ -38,8 +41,25 @@ function NavigationPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  const [accessibilityOptions, setAccessibilityOptions] = useState({
+    wheelchair: false,
+    avoidStairs: false,
+    avoidRestrictedPaths: false
+  })
+
+  const handleAccessibilityChange = (option) => {
+    setAccessibilityOptions((previous) => ({
+      ...previous,
+      [option]: !previous[option]
+    }))
+
+    setRoute(null)
+    setError('')
+  }
+
   const handleFindRoute = async () => {
     if (!startId || !destinationId) {
+      setError('Please select both starting point and destination.')
       return
     }
 
@@ -58,6 +78,18 @@ function NavigationPage() {
     )
 
     if (!start || !destination) {
+      setError('Invalid starting point or destination.')
+      return
+    }
+
+    if (
+      accessibilityOptions.wheelchair &&
+      !destination.wheelchairAccess
+    ) {
+      setRoute(null)
+      setError(
+        'The selected destination is not marked as wheelchair accessible.'
+      )
       return
     }
 
@@ -76,7 +108,8 @@ function NavigationPage() {
           1,
           Math.round(routeData.duration / 60)
         ),
-        coordinates: routeData.coordinates
+        coordinates: routeData.coordinates,
+        accessibilityOptions
       })
     } catch (err) {
       setError(err.message)
@@ -99,8 +132,8 @@ function NavigationPage() {
           </h1>
 
           <p className="mt-4 max-w-2xl text-slate-400">
-            Select your starting point and destination to calculate
-            the distance and estimated walking time.
+            Select your starting point and destination and choose
+            accessibility preferences for your journey.
           </p>
         </div>
 
@@ -176,6 +209,140 @@ function NavigationPage() {
 
           </div>
 
+          <div className="mt-8 rounded-xl border border-slate-800 bg-slate-950 p-5">
+
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-600/20">
+                <FiShield className="text-blue-400" />
+              </div>
+
+              <div>
+                <h2 className="font-semibold">
+                  Accessibility Preferences
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-400">
+                  Select preferences that should be considered for your route.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-3 md:grid-cols-3">
+
+              <button
+                type="button"
+                onClick={() =>
+                  handleAccessibilityChange('wheelchair')
+                }
+                className={`flex items-center gap-3 rounded-xl border p-4 text-left transition ${
+                  accessibilityOptions.wheelchair
+                    ? 'border-blue-500 bg-blue-500/10'
+                    : 'border-slate-800 bg-slate-900 hover:border-slate-700'
+                }`}
+              >
+                <div
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                    accessibilityOptions.wheelchair
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  {accessibilityOptions.wheelchair ? (
+                    <FiCheck />
+                  ) : (
+                    <FiUser />
+                  )}
+                </div>
+
+                <div>
+                  <p className="text-sm font-semibold">
+                    Wheelchair Accessible
+                  </p>
+
+                  <p className="mt-1 text-xs text-slate-500">
+                    Prefer accessible facilities
+                  </p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  handleAccessibilityChange('avoidStairs')
+                }
+                className={`flex items-center gap-3 rounded-xl border p-4 text-left transition ${
+                  accessibilityOptions.avoidStairs
+                    ? 'border-blue-500 bg-blue-500/10'
+                    : 'border-slate-800 bg-slate-900 hover:border-slate-700'
+                }`}
+              >
+                <div
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                    accessibilityOptions.avoidStairs
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  {accessibilityOptions.avoidStairs ? (
+                    <FiCheck />
+                  ) : (
+                    <FiNavigation />
+                  )}
+                </div>
+
+                <div>
+                  <p className="text-sm font-semibold">
+                    Avoid Stairs
+                  </p>
+
+                  <p className="mt-1 text-xs text-slate-500">
+                    Prefer step-free paths
+                  </p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  handleAccessibilityChange(
+                    'avoidRestrictedPaths'
+                  )
+                }
+                className={`flex items-center gap-3 rounded-xl border p-4 text-left transition ${
+                  accessibilityOptions.avoidRestrictedPaths
+                    ? 'border-blue-500 bg-blue-500/10'
+                    : 'border-slate-800 bg-slate-900 hover:border-slate-700'
+                }`}
+              >
+                <div
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                    accessibilityOptions.avoidRestrictedPaths
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  {accessibilityOptions.avoidRestrictedPaths ? (
+                    <FiCheck />
+                  ) : (
+                    <FiShield />
+                  )}
+                </div>
+
+                <div>
+                  <p className="text-sm font-semibold">
+                    Avoid Restricted Paths
+                  </p>
+
+                  <p className="mt-1 text-xs text-slate-500">
+                    Avoid restricted campus areas
+                  </p>
+                </div>
+              </button>
+
+            </div>
+
+          </div>
+
           <button
             onClick={handleFindRoute}
             disabled={
@@ -188,7 +355,9 @@ function NavigationPage() {
           >
             <FiNavigation />
 
-            {loading ? 'Finding Route...' : 'Find Route'}
+            {loading
+              ? 'Finding Route...'
+              : 'Find Route'}
           </button>
 
           {error && (
@@ -228,6 +397,44 @@ function NavigationPage() {
                 </div>
 
               </div>
+
+              {Object.values(
+                route.accessibilityOptions
+              ).some(Boolean) && (
+                <div className="mb-6 rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
+
+                  <div className="flex items-center gap-2">
+                    <FiShield className="text-blue-400" />
+
+                    <p className="text-sm font-semibold text-blue-300">
+                      Selected Accessibility Preferences
+                    </p>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+
+                    {route.accessibilityOptions.wheelchair && (
+                      <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300">
+                        ♿ Wheelchair Accessible
+                      </span>
+                    )}
+
+                    {route.accessibilityOptions.avoidStairs && (
+                      <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300">
+                        🚫 Avoid Stairs
+                      </span>
+                    )}
+
+                    {route.accessibilityOptions.avoidRestrictedPaths && (
+                      <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300">
+                        🚧 Avoid Restricted Paths
+                      </span>
+                    )}
+
+                  </div>
+
+                </div>
+              )}
 
               <div className="grid gap-4 md:grid-cols-2">
 
