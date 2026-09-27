@@ -43,7 +43,6 @@ function CampusMap({
   const selectedLocation =
     externalSelectedLocation ||
     internalSelectedLocation
-
   const categories = [
     'All',
     ...new Set(

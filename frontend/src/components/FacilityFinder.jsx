@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
 import {
-  FiAlertCircle,
+  FiAlertTriangle,
   FiMapPin,
   FiSearch,
+  FiShield,
   FiX
 } from 'react-icons/fi'
 import { campusLocations } from '../data/campusLocations'
@@ -12,23 +13,29 @@ function FacilityFinder({ onSelectLocation }) {
   const [category, setCategory] = useState('All')
 
   const categories = useMemo(() => {
-    return ['All', ...new Set(campusLocations.map((location) => location.category))]
+    return [
+      'All',
+      ...new Set(
+        campusLocations.map((location) => location.category)
+      )
+    ]
   }, [])
 
-  const filteredLocations = useMemo(() => {
-    const searchTerm = search.trim().toLowerCase()
+  const filteredFacilities = useMemo(() => {
+    const searchText = search.trim().toLowerCase()
 
     return campusLocations.filter((location) => {
-      const matchesSearch =
-        !searchTerm ||
-        location.name.toLowerCase().includes(searchTerm) ||
-        location.category.toLowerCase().includes(searchTerm) ||
-        location.description.toLowerCase().includes(searchTerm)
-
       const matchesCategory =
-        category === 'All' || location.category === category
+        category === 'All' ||
+        location.category === category
 
-      return matchesSearch && matchesCategory
+      const matchesSearch =
+        !searchText ||
+        location.name.toLowerCase().includes(searchText) ||
+        location.category.toLowerCase().includes(searchText) ||
+        location.description.toLowerCase().includes(searchText)
+
+      return matchesCategory && matchesSearch
     })
   }, [search, category])
 
@@ -45,31 +52,31 @@ function FacilityFinder({ onSelectLocation }) {
           Facility Finder
         </p>
 
-        <h2 className="text-2xl font-bold">
+        <h2 className="text-2xl font-bold text-white md:text-3xl">
           Find a Facility
         </h2>
 
         <p className="mt-2 text-slate-400">
-          Search campus facilities or filter them by category.
+          Search buildings, services and important campus facilities.
         </p>
       </div>
 
       <div className="relative">
-        <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+        <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-400" />
 
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search facilities..."
-          className="w-full rounded-xl border border-slate-700 bg-slate-950 px-11 py-4 pr-12 text-white outline-none placeholder:text-slate-500 focus:border-blue-500"
+          className="w-full rounded-xl border border-slate-700 bg-slate-950 py-4 pl-11 pr-12 text-white outline-none placeholder:text-slate-500 focus:border-blue-500"
         />
 
         {search && (
           <button
-            onClick={() => setSearch('')}
+            type="button"
+            onClick={clearSearch}
             className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-white"
-            aria-label="Clear search"
           >
             <FiX />
           </button>
@@ -80,6 +87,7 @@ function FacilityFinder({ onSelectLocation }) {
         {categories.map((item) => (
           <button
             key={item}
+            type="button"
             onClick={() => setCategory(item)}
             className={`rounded-full px-4 py-2 text-sm font-medium transition ${
               category === item
@@ -94,11 +102,16 @@ function FacilityFinder({ onSelectLocation }) {
 
       <div className="mt-6 flex items-center justify-between">
         <p className="text-sm text-slate-400">
-          {filteredLocations.length} facilities found
+          {filteredFacilities.length}{' '}
+          {filteredFacilities.length === 1
+            ? 'facility'
+            : 'facilities'}{' '}
+          found
         </p>
 
         {(search || category !== 'All') && (
           <button
+            type="button"
             onClick={clearSearch}
             className="text-sm font-medium text-blue-400 hover:text-blue-300"
           >
@@ -107,17 +120,16 @@ function FacilityFinder({ onSelectLocation }) {
         )}
       </div>
 
-      {filteredLocations.length > 0 ? (
+      {filteredFacilities.length > 0 ? (
         <div className="mt-5 grid gap-4 md:grid-cols-2">
-          {filteredLocations.map((location) => (
+          {filteredFacilities.map((location) => (
             <div
               key={location.id}
-              className="rounded-xl border border-slate-800 bg-slate-950 p-5 transition hover:border-slate-700"
+              className="rounded-xl border border-slate-800 bg-slate-950 p-5 transition hover:border-blue-500/50"
             >
               <div className="flex items-start justify-between gap-4">
 
                 <div className="flex items-start gap-3">
-
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-blue-600/20">
                     <FiMapPin className="text-blue-400" />
                   </div>
@@ -131,13 +143,11 @@ function FacilityFinder({ onSelectLocation }) {
                       {location.category}
                     </p>
                   </div>
-
                 </div>
 
                 {location.emergency && (
-                  <span className="flex items-center gap-1 rounded-full bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-400">
-                    <FiAlertCircle />
-                    Emergency
+                  <span className="shrink-0 rounded-full bg-red-500/10 px-3 py-1 text-xs font-medium text-red-400">
+                    🚨 Emergency
                   </span>
                 )}
 
@@ -150,13 +160,14 @@ function FacilityFinder({ onSelectLocation }) {
               <div className="mt-4 flex flex-wrap gap-2">
 
                 {location.wheelchairAccess && (
-                  <span className="rounded-full bg-green-500/10 px-3 py-1 text-xs font-medium text-green-400">
+                  <span className="flex items-center gap-1 rounded-full bg-green-500/10 px-3 py-1 text-xs font-medium text-green-400">
                     ♿ Wheelchair Accessible
                   </span>
                 )}
 
                 {location.accessibility && (
-                  <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-400">
+                  <span className="flex items-center gap-1 rounded-full bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-400">
+                    <FiShield />
                     Accessible
                   </span>
                 )}
@@ -164,19 +175,20 @@ function FacilityFinder({ onSelectLocation }) {
               </div>
 
               <button
+                type="button"
                 onClick={() => onSelectLocation?.(location)}
-                className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-slate-800 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-600"
-                >
+                className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700"
+              >
                 <FiMapPin />
                 View on Map
-                </button>
+              </button>
 
             </div>
           ))}
         </div>
       ) : (
         <div className="mt-6 rounded-xl border border-dashed border-slate-700 bg-slate-950 p-10 text-center">
-          <FiSearch className="mx-auto text-3xl text-slate-600" />
+          <FiAlertTriangle className="mx-auto text-3xl text-slate-500" />
 
           <h3 className="mt-4 font-semibold text-white">
             No facilities found
@@ -185,6 +197,14 @@ function FacilityFinder({ onSelectLocation }) {
           <p className="mt-2 text-sm text-slate-500">
             Try another search term or category.
           </p>
+
+          <button
+            type="button"
+            onClick={clearSearch}
+            className="mt-5 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+          >
+            Clear Filters
+          </button>
         </div>
       )}
 
