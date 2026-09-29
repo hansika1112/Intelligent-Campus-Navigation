@@ -18,6 +18,7 @@ import {
 } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { campusLocations } from '../data/campusLocations'
+import { getLocations } from '../services/locationService'
 import { getRoute } from '../services/routingService'
 import RouteInstructions from '../components/RouteInstructions'
 
@@ -36,10 +37,12 @@ function RouteMapView({ coordinates }) {
 }
 
 function NavigationPage() {
+  const [locations, setLocations] = useState([])
   const [startId, setStartId] = useState('')
   const [destinationId, setDestinationId] = useState('')
   const [route, setRoute] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [locationsLoading, setLocationsLoading] = useState(true)
   const [error, setError] = useState('')
 
   const [accessibilityOptions, setAccessibilityOptions] =
@@ -48,6 +51,48 @@ function NavigationPage() {
       avoidStairs: false,
       avoidRestrictedPaths: false
     })
+
+  useEffect(() => {
+    const loadLocations = async () => {
+      try {
+        setLocationsLoading(true)
+
+        const data = await getLocations()
+
+        const normalizedLocations = data.map(
+          (location) => {
+            const matchingStaticLocation =
+              campusLocations.find(
+                (item) =>
+                  item.name.toLowerCase() ===
+                  location.name.toLowerCase()
+              )
+
+            return {
+              ...location,
+              id:
+                matchingStaticLocation?.id ??
+                location._id,
+              databaseId: location._id,
+              routingId:
+                matchingStaticLocation?.id ?? null
+            }
+          }
+        )
+
+        setLocations(normalizedLocations)
+        setError('')
+      } catch (err) {
+        setError(
+          'Unable to load campus locations from the server.'
+        )
+      } finally {
+        setLocationsLoading(false)
+      }
+    }
+
+    loadLocations()
+  }, [])
 
   const handleAccessibilityChange = (option) => {
     setAccessibilityOptions((previous) => ({
@@ -75,12 +120,14 @@ function NavigationPage() {
       return
     }
 
-    const start = campusLocations.find(
-      (location) => location.id === Number(startId)
+    const start = locations.find(
+      (location) =>
+        String(location.id) === String(startId)
     )
 
-    const destination = campusLocations.find(
-      (location) => location.id === Number(destinationId)
+    const destination = locations.find(
+      (location) =>
+        String(location.id) === String(destinationId)
     )
 
     if (!start || !destination) {
@@ -101,14 +148,34 @@ function NavigationPage() {
       return
     }
 
+    const routingStart =
+      campusLocations.find(
+        (location) =>
+          location.id === start.routingId
+      )
+
+    const routingDestination =
+      campusLocations.find(
+        (location) =>
+          location.id === destination.routingId
+      )
+
+    if (!routingStart || !routingDestination) {
+      setRoute(null)
+      setError(
+        'This location is not yet connected to the campus routing graph.'
+      )
+      return
+    }
+
     try {
       setLoading(true)
       setError('')
       setRoute(null)
 
       const routeData = await getRoute(
-        start,
-        destination,
+        routingStart,
+        routingDestination,
         accessibilityOptions,
         campusLocations
       )
@@ -155,6 +222,18 @@ function NavigationPage() {
           </p>
         </div>
 
+        {locationsLoading && (
+          <div className="mb-6 rounded-xl border border-slate-800 bg-slate-900 p-5 text-slate-400">
+            Loading campus locations...
+          </div>
+        )}
+
+        {!locationsLoading && locations.length === 0 && (
+          <div className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 p-5 text-red-300">
+            No campus locations are available from the server.
+          </div>
+        )}
+
         <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 md:p-8">
 
           <div className="grid gap-6 md:grid-cols-2">
@@ -174,15 +253,19 @@ function NavigationPage() {
                     setRoute(null)
                     setError('')
                   }}
-                  className="w-full appearance-none rounded-xl border border-slate-700 bg-slate-950 px-11 py-4 text-white outline-none focus:border-blue-500"
+                  disabled={
+                    locationsLoading ||
+                    locations.length === 0
+                  }
+                  className="w-full appearance-none rounded-xl border border-slate-700 bg-slate-950 px-11 py-4 text-white outline-none focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <option value="">
                     Select starting point
                   </option>
 
-                  {campusLocations.map((location) => (
+                  {locations.map((location) => (
                     <option
-                      key={location.id}
+                      key={location._id || location.id}
                       value={location.id}
                     >
                       {location.name}
@@ -207,15 +290,19 @@ function NavigationPage() {
                     setRoute(null)
                     setError('')
                   }}
-                  className="w-full appearance-none rounded-xl border border-slate-700 bg-slate-950 px-11 py-4 text-white outline-none focus:border-blue-500"
+                  disabled={
+                    locationsLoading ||
+                    locations.length === 0
+                  }
+                  className="w-full appearance-none rounded-xl border border-slate-700 bg-slate-950 px-11 py-4 text-white outline-none focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <option value="">
                     Select destination
                   </option>
 
-                  {campusLocations.map((location) => (
+                  {locations.map((location) => (
                     <option
-                      key={location.id}
+                      key={location._id || location.id}
                       value={location.id}
                     >
                       {location.name}
@@ -370,7 +457,8 @@ function NavigationPage() {
               !startId ||
               !destinationId ||
               startId === destinationId ||
-              loading
+              loading ||
+              locationsLoading
             }
             className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-4 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
