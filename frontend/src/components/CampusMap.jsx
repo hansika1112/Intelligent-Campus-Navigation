@@ -6,7 +6,6 @@ import {
 } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { FiSearch, FiX, FiMapPin } from 'react-icons/fi'
-import { campusLocations } from '../data/campusLocations'
 import CampusMarker from './CampusMarker'
 
 function MapController({ selectedLocation }) {
@@ -31,7 +30,8 @@ function MapController({ selectedLocation }) {
 }
 
 function CampusMap({
-  selectedLocation: externalSelectedLocation
+  selectedLocation: externalSelectedLocation,
+  locations = []
 }) {
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('All')
@@ -43,21 +43,24 @@ function CampusMap({
   const selectedLocation =
     externalSelectedLocation ||
     internalSelectedLocation
-  const categories = [
-    'All',
-    ...new Set(
-      campusLocations.map(
-        (location) => location.category
+
+  const categories = useMemo(() => {
+    return [
+      'All',
+      ...new Set(
+        locations.map(
+          (location) => location.category
+        )
       )
-    )
-  ]
+    ]
+  }, [locations])
 
   const filteredLocations = useMemo(() => {
     const searchText = search
       .trim()
       .toLowerCase()
 
-    return campusLocations.filter((location) => {
+    return locations.filter((location) => {
       const matchesSearch =
         searchText === '' ||
         location.name
@@ -79,7 +82,7 @@ function CampusMap({
         matchesCategory
       )
     })
-  }, [search, category])
+  }, [search, category, locations])
 
   const center = [
     31.2555,
@@ -139,7 +142,8 @@ function CampusMap({
               {filteredLocations.map(
                 (location) => (
                   <button
-                    key={location.id}
+                    key={location._id || location.id}
+                    type="button"
                     onClick={() =>
                       handleSelectLocation(
                         location
@@ -248,11 +252,13 @@ function CampusMap({
           {filteredLocations.map(
             (location) => (
               <CampusMarker
-                key={location.id}
+                key={location._id || location.id}
                 location={location}
                 isSelected={
+                  selectedLocation?._id ===
+                    location._id ||
                   selectedLocation?.id ===
-                  location.id
+                    location.id
                 }
                 onSelect={
                   handleMarkerSelect
