@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import {
   FiMap,
   FiNavigation,
@@ -57,14 +58,20 @@ function Home() {
             </p>
 
             <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
-              <button className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-7 py-3.5 font-semibold transition hover:bg-blue-700">
+              <Link
+                to="/map"
+                className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-7 py-3.5 font-semibold transition hover:bg-blue-700"
+              >
                 Explore Campus
                 <FiArrowRight />
-              </button>
+              </Link>
 
-              <button className="rounded-xl border border-slate-700 px-7 py-3.5 font-semibold text-slate-200 transition hover:bg-slate-900">
+              <Link
+                to="/navigation"
+                className="flex items-center justify-center rounded-xl border border-slate-700 px-7 py-3.5 font-semibold text-slate-200 transition hover:bg-slate-900"
+              >
                 Get Directions
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -88,9 +95,10 @@ function Home() {
               const Icon = feature.icon
 
               return (
-                <div
+                <Link
                   key={feature.title}
-                  className="rounded-2xl border border-slate-800 bg-slate-950 p-6 transition hover:-translate-y-1 hover:border-blue-500/50"
+                  to={feature.title === 'Campus Map' || feature.title === 'Find Facilities' ? '/map' : '/navigation'}
+                  className="block rounded-2xl border border-slate-800 bg-slate-950 p-6 transition hover:-translate-y-1 hover:border-blue-500/50"
                 >
                   <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600/10">
                     <Icon className="text-2xl text-blue-400" />
@@ -103,7 +111,7 @@ function Home() {
                   <p className="mt-3 text-sm leading-6 text-slate-400">
                     {feature.description}
                   </p>
-                </div>
+                </Link>
               )
             })}
           </div>
