@@ -4,6 +4,7 @@ require('dotenv').config()
 
 const connectDB = require('./config/db')
 const locationRoutes = require('./routes/locationRoutes')
+const crowdPredictionRoutes = require('./routes/crowdPredictionRoutes')
 
 const app = express()
 
@@ -17,6 +18,8 @@ app.get('/', (req, res) => {
 })
 
 app.use('/api/locations', locationRoutes)
+
+app.use('/api/predict-crowd', crowdPredictionRoutes)
 
 const PORT = process.env.PORT || 5001
 

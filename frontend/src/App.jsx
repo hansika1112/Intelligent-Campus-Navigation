@@ -6,6 +6,7 @@ import MapPage from './pages/MapPage'
 import NavigationPage from './pages/NavigationPage'
 import AssistantPage from './pages/AssistantPage'
 import EmergencyPage from './pages/EmergencyPage'
+import CrowdPredictionPage from './pages/CrowdPredictionPage'
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/navigation" element={<NavigationPage />} />
         <Route path="/assistant" element={<AssistantPage />} />
         <Route path="/emergency" element={<EmergencyPage />} />
+        <Route path="/crowd-prediction" element={<CrowdPredictionPage />} />
       </Routes>
 
       <Footer />

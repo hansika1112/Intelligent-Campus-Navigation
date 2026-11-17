@@ -5,6 +5,8 @@ import { useState } from 'react'
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
 
+  const linkStyle = "text-sm text-slate-300 hover:text-blue-400 transition-colors"
+
   return (
     <nav className="fixed top-0 z-50 w-full border-b border-slate-800 bg-slate-950/95 backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
@@ -23,26 +25,30 @@ function Navbar() {
           </div>
         </Link>
 
-        <div className="hidden items-center gap-8 md:flex">
-          <Link to="/" className="text-sm text-slate-300 hover:text-blue-400">
+        <div className="hidden items-center gap-6 lg:flex">
+          <Link to="/" className={linkStyle}>
             Home
           </Link>
 
-          <Link to="/map" className="text-sm text-slate-300 hover:text-blue-400">
+          <Link to="/map" className={linkStyle}>
             Campus Map
           </Link>
 
-          <Link to="/navigation" className="text-sm text-slate-300 hover:text-blue-400">
+          <Link to="/navigation" className={linkStyle}>
             Navigation
           </Link>
 
-          <Link to="/assistant" className="text-sm text-slate-300 hover:text-blue-400">
+          <Link to="/crowd-prediction" className={linkStyle}>
+            Crowd Prediction
+          </Link>
+
+          <Link to="/assistant" className={linkStyle}>
             AI Assistant
           </Link>
 
           <Link
             to="/emergency"
-            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
           >
             Emergency
           </Link>
@@ -50,7 +56,8 @@ function Navbar() {
 
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="text-white md:hidden"
+          className="text-white lg:hidden"
+          aria-label="Toggle navigation menu"
         >
           {isOpen ? (
             <FiX className="text-2xl" />
@@ -61,28 +68,32 @@ function Navbar() {
       </div>
 
       {isOpen && (
-        <div className="border-t border-slate-800 bg-slate-950 px-6 py-5 md:hidden">
+        <div className="border-t border-slate-800 bg-slate-950 px-6 py-5 lg:hidden">
           <div className="flex flex-col gap-4">
-            <Link to="/" onClick={() => setIsOpen(false)} className="text-slate-300">
+            <Link to="/" onClick={() => setIsOpen(false)} className={linkStyle}>
               Home
             </Link>
 
-            <Link to="/map" onClick={() => setIsOpen(false)} className="text-slate-300">
+            <Link to="/map" onClick={() => setIsOpen(false)} className={linkStyle}>
               Campus Map
             </Link>
 
-            <Link to="/navigation" onClick={() => setIsOpen(false)} className="text-slate-300">
+            <Link to="/navigation" onClick={() => setIsOpen(false)} className={linkStyle}>
               Navigation
             </Link>
 
-            <Link to="/assistant" onClick={() => setIsOpen(false)} className="text-slate-300">
+            <Link to="/crowd-prediction" onClick={() => setIsOpen(false)} className={linkStyle}>
+              Crowd Prediction
+            </Link>
+
+            <Link to="/assistant" onClick={() => setIsOpen(false)} className={linkStyle}>
               AI Assistant
             </Link>
 
             <Link
               to="/emergency"
               onClick={() => setIsOpen(false)}
-              className="rounded-lg bg-red-600 px-4 py-2 text-center text-white"
+              className="rounded-lg bg-red-600 px-4 py-2 text-center text-white hover:bg-red-700"
             >
               Emergency Assistance
             </Link>
